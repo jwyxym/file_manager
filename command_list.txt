@@ -6,5 +6,7 @@
 # -ccmd 使用命令（静默模式）
 # -path.. 上一层目录（进入上一层目录）
 # -copyto.. 上一层目录（进入上一层粘贴的目录）
+# -download 在目录下下载 del（删除非下载列表的文件） startchk（url开头检查） incluchk（url域名检查）
+# 示例：-download download.txt del=true incluchk=mediafilez.forgecdn.net|cdn.modrinth.com
 # -final 最后执行的内容
 # break 清空目标/来源，可以单独清空目标或来源

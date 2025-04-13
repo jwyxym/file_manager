@@ -1,10 +1,13 @@
 from os.path import join, exists, isdir, dirname
-from os import listdir, mkdir
+from os import listdir, mkdir, remove, walk
 from shutil import copy
 from tqdm import tqdm
 from subprocess import run, DEVNULL
 from time import sleep
+from aiohttp import ClientSession
+from asyncio import run as async_run
 from sys import argv
+from pathlib import Path
 
 # 批注符号
 # -path 进入目录
@@ -14,10 +17,14 @@ from sys import argv
 # -ccmd 使用命令（静默模式）
 # -path.. 上一层目录（进入上一层目录）
 # -copyto.. 上一层目录（进入上一层粘贴的目录）
+# -download 在目录下下载
 # -final 最后执行的内容
 # break 清空目标/来源，可以单独清空目标或来源
 
-PATH = ''
+def chk_path(path):
+    return str(Path.cwd()) == path
+
+PATH = str(Path.cwd())
 COPYTO = ''
 FINAL = ['', '']
 
@@ -73,7 +80,51 @@ def commands(key, line):
     def _final(l):
         global FINAL
         FINAL = l.split(maxsplit = 1)
-
+    def _download(l):
+        DOWNLOADED = []
+        async def download(url, path):
+            if exists(path): return
+            async with ClientSession() as session:
+                try:
+                    async with session.get(url) as response:
+                        if response.status == 200:
+                            with open(path, 'wb') as f:
+                                while True:
+                                    chunk = await response.content.read(1024)
+                                    if not chunk:
+                                        break
+                                    f.write(chunk)
+                except Exception:
+                    try:
+                        remove(path)
+                    except Exception:
+                        pass
+        
+        try:
+            startchk = None
+            incluchk = []
+            paras = l.split(' ')
+            for p in paras:
+                if p.startswith('startchk='):
+                    startchk = p[len('startchk=') : ]
+                elif p.startswith('incluchk='):
+                    incluchk.extend(p[len('incluchk=') : ].split('|'))
+            if (any(paras[0].startswith(x) for x in ['C:', 'D:', 'E:', './', '/']) and paras[0].endswith('.txt')) or exists(join(PATH, paras[0])):
+                with open (join(PATH, paras[0]), 'r', encoding = 'utf-8') as f:
+                    for i in f.readlines():
+                        if (not startchk or not i.startswith(startchk)) or (len(incluchk) == 0 or not any(x in i for x in incluchk)):
+                            continue
+                        i = i.rstrip('\n')
+                        async_run(download(i, join(PATH, i.rsplit('/', 1)[-1])))
+                        DOWNLOADED.append(i.rsplit('/', 1)[-1])
+            elif paras[0].startswith('http'):
+                async_run(download(paras[0], join(PATH, paras[0].rsplit('/', 1)[-1])))
+        finally:
+            if 'del=true' in l and not chk_path(PATH):
+                for root, dirs, files in walk(PATH, topdown = True, onerror = None, followlinks = False):
+                    for file in files:
+                        if not file in DOWNLOADED and not file in l:
+                            remove(join(root, file))
     COMMAND_LIST = {
         '-copyto' : _copyto,
         '-copy' : _copy,
@@ -83,6 +134,7 @@ def commands(key, line):
         '-final' : _final,
         '-path..' : _parent_path,
         '-copyto..' : _parent_copy,
+        '-download' : _download,
         'break' : _break
     }
     if not key in COMMAND_LIST:
