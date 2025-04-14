@@ -32,6 +32,8 @@ def commands(key, line):
     def _copyto(l):
         global COPYTO
         COPYTO = join(COPYTO, l)
+        if not exists(COPYTO):
+            mkdir(COPYTO)
     def _copy(l):
         global PATH, COPYTO
         if COPYTO == '':
@@ -49,6 +51,8 @@ def commands(key, line):
     def _path(l):
         global PATH
         PATH = join(PATH, l)
+        if not exists(PATH):
+            mkdir(PATH)
     def _parent_path(_):
         global PATH
         PATH = dirname(PATH)
