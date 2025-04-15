@@ -8,11 +8,13 @@ from aiohttp import ClientSession
 from asyncio import run as async_run
 from sys import argv
 from pathlib import Path
+from sqlite3 import connect
 
 # 批注符号
 # -path 进入目录
 # -copy 复制目录下的文件（配合-copyto使用）
 # -copyto 复制的目标目录
+# -sqlite 复制目录下的cdb（整合到-copyto目录下的cards.cdb中）
 # -cmd 使用命令（在path下）
 # -ccmd 使用命令（静默模式）
 # -path.. 上一层目录（进入上一层目录）
@@ -27,6 +29,7 @@ def chk_path(path):
 PATH = str(Path.cwd())
 COPYTO = ''
 FINAL = ['', '']
+CDB = 'cards.cdb'
 
 def commands(key, line):
     def _copyto(l):
@@ -48,6 +51,52 @@ def commands(key, line):
         else:
             if exists(join(PATH, l)):
                 copy(join(PATH, l), join(COPYTO, l))
+    def _sqlite(l):
+        if COPYTO == '':
+            return
+        if not exists(COPYTO):
+            mkdir(COPYTO)
+
+        def sqlite(_from, _to):
+            rows = ()
+            try:
+                conn = connect(_from)
+                cursor = conn.cursor()
+                cursor.execute("select * from datas,texts where datas.id=texts.id")
+                rows = cursor.fetchall()
+            finally:
+                conn.close()
+
+            if len(rows) > 0:
+                if not exists(_to):
+                    try:
+                        conn = connect(_to)
+                        cursor = conn.cursor()
+                        cursor.execute("CREATE TABLE texts(id integer primary key,name text,desc text,str1 text,str2 text,str3 text,str4 text,str5 text,str6 text,str7 text,str8 text,str9 text,str10 text,str11 text,str12 text,str13 text,str14 text,str15 text,str16 text);")
+                        cursor.execute("CREATE TABLE datas(id integer primary key,ot integer,alias integer,setcode integer,type integer,atk integer,def integer,level integer,race integer,attribute integer,category integer);")
+                        conn.commit()
+                    finally:
+                        conn.close()
+
+                for row in rows:
+                    try:
+                        conn = connect(_to)
+                        cursor = conn.cursor()
+                        cursor.execute(f"INSERT OR REPLACE INTO datas VALUES({row[0]}, {row[1]}, {row[2]}, {row[3]}, {row[4]}, {row[5]}, {row[6]}, {row[7]}, {row[8]}, {row[9]}, {row[10]});")
+                        cursor.execute(f"INSERT OR REPLACE INTO texts VALUES({row[11]}, '{row[12]}', '{row[13]}', '{row[14]}', '{row[15]}', '{row[16]}', '{row[17]}', '{row[18]}', '{row[19]}', '{row[20]}', '{row[21]}', '{row[22]}', '{row[23]}', '{row[24]}', '{row[25]}', '{row[26]}', '{row[27]}', '{row[28]}', '{row[29]}');")
+                        conn.commit()
+                    finally:
+                        conn.close()
+
+        if '*' in l:
+            l = l.split('*')
+            for i in listdir(PATH):
+                if not isdir(join(PATH, i)) and all(element in i for element in l):
+                    sqlite(join(PATH, i), join(COPYTO, CDB))
+        else:
+            if exists(join(PATH, l)):
+                sqlite(join(PATH, l), join(COPYTO, CDB))
+
     def _path(l):
         global PATH
         PATH = join(PATH, l)
@@ -132,6 +181,7 @@ def commands(key, line):
     COMMAND_LIST = {
         '-copyto' : _copyto,
         '-copy' : _copy,
+        '-sqlite' : _sqlite,
         '-path' : _path,
         '-ccmd' : _ccmd,
         '-cmd' : _cmd,

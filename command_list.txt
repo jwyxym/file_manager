@@ -2,6 +2,7 @@
 # -path 进入目录
 # -copy 复制目录下的文件（配合-copyto使用）
 # -copyto 复制的目标目录
+# -sqlite 复制目录下的cdb（整合到-copyto目录下的cards.cdb中）
 # -cmd 使用命令（在path下）
 # -ccmd 使用命令（静默模式）
 # -path.. 上一层目录（进入上一层目录）
