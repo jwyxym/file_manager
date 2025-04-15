@@ -1,6 +1,6 @@
 from os.path import join, exists, isdir, dirname
 from os import listdir, mkdir, remove, walk
-from shutil import copy
+from shutil import copy, rmtree
 from tqdm import tqdm
 from subprocess import run, DEVNULL
 from time import sleep
@@ -13,6 +13,10 @@ from sqlite3 import connect
 # 批注符号
 # -path 进入目录
 # -copy 复制目录下的文件（配合-copyto使用）
+# -del 删除目录下的指定文件
+# -copydel 删除-copyto目录下的指定文件
+# -deltree 删除目录下的指定目录
+# -copydeltree 删除-copyto目录下的指定目录
 # -copyto 复制的目标目录
 # -sqlite 复制目录下的cdb（整合到-copyto目录下的cards.cdb中）
 # -cmd 使用命令（在path下）
@@ -32,6 +36,26 @@ FINAL = ['', '']
 CDB = 'cards.cdb'
 
 def commands(key, line):
+    def _del(l):
+        global PATH
+        if exists(join(PATH, l)) and not isdir(join(PATH, l)):
+            remove(join(PATH, l))
+    def _copydel(l):
+        global COPYTO
+        if COPYTO == '':
+            return
+        if exists(join(COPYTO, l)) and not isdir(join(COPYTO, l)):
+            remove(join(COPYTO, l))
+    def _deltree(l):
+        global PATH
+        if exists(join(PATH, l)) and isdir(join(PATH, l)):
+            rmtree(join(PATH, l))
+    def _copydeltree(l):
+        global COPYTO
+        if COPYTO == '':
+            return
+        if exists(join(COPYTO, l)) and isdir(join(COPYTO, l)):
+            rmtree(join(COPYTO, l))
     def _copyto(l):
         global COPYTO
         COPYTO = join(COPYTO, l)
@@ -83,7 +107,19 @@ def commands(key, line):
                         conn = connect(_to)
                         cursor = conn.cursor()
                         cursor.execute(f"INSERT OR REPLACE INTO datas VALUES({row[0]}, {row[1]}, {row[2]}, {row[3]}, {row[4]}, {row[5]}, {row[6]}, {row[7]}, {row[8]}, {row[9]}, {row[10]});")
-                        cursor.execute(f"INSERT OR REPLACE INTO texts VALUES({row[11]}, '{row[12]}', '{row[13]}', '{row[14]}', '{row[15]}', '{row[16]}', '{row[17]}', '{row[18]}', '{row[19]}', '{row[20]}', '{row[21]}', '{row[22]}', '{row[23]}', '{row[24]}', '{row[25]}', '{row[26]}', '{row[27]}', '{row[28]}', '{row[29]}');")
+                        query = """
+                            INSERT OR REPLACE INTO texts VALUES(
+                                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                                ?, ?, ?, ?, ?, ?, ?, ?, ?
+                            )
+                        """
+                        values = (
+                            row[11], row[12], row[13], row[14], row[15],
+                            row[16], row[17], row[18], row[19], row[20],
+                            row[21], row[22], row[23], row[24], row[25],
+                            row[26], row[27], row[28], row[29]
+                        )
+                        cursor.execute(query, values)
                         conn.commit()
                     finally:
                         conn.close()
@@ -188,6 +224,10 @@ def commands(key, line):
         '-final' : _final,
         '-path..' : _parent_path,
         '-copyto..' : _parent_copy,
+        '-copydel' : _copydel,
+        '-del' : _del,
+        '-copydeltree' : _copydeltree,
+        '-deltree' : _deltree,
         '-download' : _download,
         'break' : _break
     }
