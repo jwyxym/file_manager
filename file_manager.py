@@ -8,7 +8,7 @@ from aiohttp import ClientSession
 from asyncio import run as async_run
 from sys import argv
 from pathlib import Path
-from sqlite3 import connect
+from sqlite3 import connect, OperationalError
 
 # 批注符号
 # -path 进入目录
@@ -88,6 +88,8 @@ def commands(key, line):
                 cursor = conn.cursor()
                 cursor.execute("select * from datas,texts where datas.id=texts.id")
                 rows = cursor.fetchall()
+            except OperationalError as e:
+                pass
             finally:
                 conn.close()
 
