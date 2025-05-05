@@ -4,7 +4,7 @@ from shutil import copy, rmtree
 from tqdm import tqdm
 from subprocess import run, DEVNULL
 from time import sleep
-from aiohttp import ClientSession
+from aiohttp import ClientSession, TCPConnector
 from asyncio import run as async_run
 from sys import argv
 from pathlib import Path
@@ -175,7 +175,7 @@ def commands(key, line):
         DOWNLOADED = []
         async def download(url, path):
             if exists(path): return
-            async with ClientSession() as session:
+            async with ClientSession(connector = TCPConnector(ssl = False)) as session:
                 try:
                     async with session.get(url) as response:
                         if response.status == 200:
@@ -203,7 +203,7 @@ def commands(key, line):
             if (any(paras[0].startswith(x) for x in ['C:', 'D:', 'E:', './', '/']) and paras[0].endswith('.txt')) or exists(join(PATH, paras[0])):
                 with open (join(PATH, paras[0]), 'r', encoding = 'utf-8') as f:
                     for i in f.readlines():
-                        if (not startchk or not i.startswith(startchk)) or (len(incluchk) == 0 or not any(x in i for x in incluchk)):
+                        if (startchk and not i.startswith(startchk)) or (len(incluchk) > 0 and not any(x in i for x in incluchk)):
                             continue
                         i = i.rstrip('\n')
                         async_run(download(i, join(PATH, i.rsplit('/', 1)[-1])))
