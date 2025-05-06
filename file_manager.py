@@ -1,4 +1,4 @@
-from os.path import join, exists, isdir, dirname
+from os.path import join, exists, isdir, isfile, dirname, relpath, basename
 from os import listdir, mkdir, remove, walk
 from shutil import copy, rmtree
 from tqdm import tqdm
@@ -9,6 +9,8 @@ from asyncio import run as async_run
 from sys import argv
 from pathlib import Path
 from sqlite3 import connect, OperationalError
+from zipfile import ZipFile, ZIP_DEFLATED
+
 
 # 批注符号
 # -path 进入目录
@@ -203,7 +205,7 @@ def commands(key, line):
             if (any(paras[0].startswith(x) for x in ['C:', 'D:', 'E:', './', '/']) and paras[0].endswith('.txt')) or exists(join(PATH, paras[0])):
                 with open (join(PATH, paras[0]), 'r', encoding = 'utf-8') as f:
                     for i in f.readlines():
-                        if (startchk and not i.startswith(startchk)) or (len(incluchk) > 0 and not any(x in i for x in incluchk)):
+                        if (startchk and not i.startswith(startchk)) or (len(incluchk) > 0 and not any(x in i for x in incluchk)) or i.startswith('#'):
                             continue
                         i = i.rstrip('\n')
                         async_run(download(i, join(PATH, i.rsplit('/', 1)[-1])))
@@ -216,6 +218,24 @@ def commands(key, line):
                     for file in files:
                         if not file in DOWNLOADED and not file in l:
                             remove(join(root, file))
+    def _zip(l):
+        global PATH, COPYTO
+        line = l.split(' ')
+        name = f'{line[0]}.zip'
+        if len(line) <= 1:
+            return
+        with ZipFile(join(COPYTO, name), 'w', ZIP_DEFLATED) as zipf:
+            for v in range(1, len(line)):
+                path = line[v]
+                if isdir(join(PATH, path)):
+                    for root, dirs, files in walk(join(PATH, path)):
+                        for file in files:
+                            file_path = join(root, file)
+                            arcname = relpath(file_path, dirname(join(PATH, path)))
+                            zipf.write(file_path, arcname)
+                elif isfile(join(PATH, path)):
+                    arcname = basename(join(PATH, path))
+                    zipf.write(join(PATH, path), arcname)
     COMMAND_LIST = {
         '-copyto' : _copyto,
         '-copy' : _copy,
@@ -231,6 +251,7 @@ def commands(key, line):
         '-copydeltree' : _copydeltree,
         '-deltree' : _deltree,
         '-download' : _download,
+        '-zip' : _zip,
         'break' : _break
     }
     if not key in COMMAND_LIST:
