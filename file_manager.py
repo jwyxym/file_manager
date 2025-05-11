@@ -26,6 +26,7 @@ from zipfile import ZipFile, ZIP_DEFLATED
 # -path.. 上一层目录（进入上一层目录）
 # -copyto.. 上一层目录（进入上一层粘贴的目录）
 # -download 在目录下下载
+# -zip 压缩文件 第一个参数是压缩包的名称（不带后缀） 后续的参数是目录下的文件
 # -final 最后执行的内容
 # break 清空目标/来源，可以单独清空目标或来源
 
@@ -224,7 +225,7 @@ def commands(key, line):
         name = f'{line[0]}.zip'
         if len(line) <= 1:
             return
-        with ZipFile(join(COPYTO, name), 'w', ZIP_DEFLATED) as zipf:
+        with ZipFile(join(COPYTO, name), 'w', ZIP_DEFLATED, compresslevel = 9) as zipf:
             for v in range(1, len(line)):
                 path = line[v]
                 if isdir(join(PATH, path)):
