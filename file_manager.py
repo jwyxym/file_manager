@@ -222,21 +222,23 @@ def commands(key, line):
     def _zip(l):
         global PATH, COPYTO
         line = l.split(' ')
-        name = f'{line[0]}.zip'
+        name = f'{line[0]}{'' if '.' in line[0] else '.zip'}'
         if len(line) <= 1:
             return
         with ZipFile(join(COPYTO, name), 'w', ZIP_DEFLATED, compresslevel = 9) as zipf:
-            for v in range(1, len(line)):
-                path = line[v]
-                if isdir(join(PATH, path)):
-                    for root, dirs, files in walk(join(PATH, path)):
-                        for file in files:
-                            file_path = join(root, file)
-                            arcname = relpath(file_path, dirname(join(PATH, path)))
-                            zipf.write(file_path, arcname)
-                elif isfile(join(PATH, path)):
-                    arcname = basename(join(PATH, path))
-                    zipf.write(join(PATH, path), arcname)
+            for r, d, f in walk(join(PATH)):
+                for path in f:
+                    if len([x for x in line[1 : ] if x.replace('*', '') in path]) > 0:
+                        arcname = basename(join(PATH, path))
+                        zipf.write(join(PATH, path), arcname)
+                for path in d:
+                    if path in line[1 : ] :
+                        for root, dirs, files in walk(join(PATH, path)):
+                            for file in files:
+                                file_path = join(root, file)
+                                arcname = relpath(file_path, dirname(join(PATH, path)))
+                                zipf.write(file_path, arcname)
+                break
     COMMAND_LIST = {
         '-copyto' : _copyto,
         '-copy' : _copy,

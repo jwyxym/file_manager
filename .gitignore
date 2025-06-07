@@ -2,3 +2,5 @@
 /dist
 *.spec
 /download
+/download2
+*.zip
