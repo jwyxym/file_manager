@@ -188,31 +188,53 @@ def commands(key, line):
                                     if not chunk:
                                         break
                                     f.write(chunk)
-                except Exception:
+                except Exception as e:
+                    print(e)
                     try:
                         remove(path)
                     except Exception:
                         pass
+
+        def to_name(name):
+            name.replace('?', '')
+            name.replace('\\', '')
+            name.replace('|', '')
+            name.replace('/', '')
+            name.replace('*', '')
+            name.replace(':', '')
+            return name
         
         try:
-            startchk = None
+            endswith = None
+            startchk = []
             incluchk = []
             paras = l.split(' ')
             for p in paras:
                 if p.startswith('startchk='):
-                    startchk = p[len('startchk=') : ]
+                    startchk.extend(p[len('startchk=') : ].split('|'))
                 elif p.startswith('incluchk='):
                     incluchk.extend(p[len('incluchk=') : ].split('|'))
+                elif p.startswith('endswith='):
+                    endswith = p[len('incluchk=') : ]
             if (any(paras[0].startswith(x) for x in ['C:', 'D:', 'E:', './', '/']) and paras[0].endswith('.txt')) or exists(join(PATH, paras[0])):
                 with open (join(PATH, paras[0]), 'r', encoding = 'utf-8') as f:
                     for i in f.readlines():
-                        if (startchk and not i.startswith(startchk)) or (len(incluchk) > 0 and not any(x in i for x in incluchk)) or i.startswith('#'):
+                        if (len(startchk) > 0 and not any(i.startswith(x) for x in startchk)) or (len(incluchk) > 0 and not any(x in i for x in incluchk)) or i.startswith('#'):
                             continue
                         i = i.rstrip('\n')
-                        async_run(download(i, join(PATH, i.rsplit('/', 1)[-1])))
-                        DOWNLOADED.append(i.rsplit('/', 1)[-1])
+                        name = to_name(i.rsplit('/', 1)[-1])
+                        if (endswith and not i.endswith(endswith)):
+                            name += f'.{endswith}'
+                        async_run(download(i, join(PATH, name)))
+                        DOWNLOADED.append(name)
             elif paras[0].startswith('http'):
-                async_run(download(paras[0], join(PATH, paras[0].rsplit('/', 1)[-1])))
+                paras[0] = paras[0].rstrip('\n')
+                name = to_name(paras[0].rsplit('/', 1)[-1])
+                if (endswith and not i.endswith(endswith)):
+                    name += f'.{endswith}'
+                path = join(PATH, name)
+                async_run(download(paras[0], path))
+                DOWNLOADED.append(name)
         finally:
             if 'del=true' in l and not chk_path(PATH):
                 for root, dirs, files in walk(PATH, topdown = True, onerror = None, followlinks = False):
