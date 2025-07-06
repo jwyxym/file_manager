@@ -189,20 +189,15 @@ def commands(key, line):
                                         break
                                     f.write(chunk)
                 except Exception as e:
-                    print(e)
                     try:
                         remove(path)
                     except Exception:
                         pass
 
         def to_name(name):
-            name.replace('?', '')
-            name.replace('\\', '')
-            name.replace('|', '')
-            name.replace('/', '')
-            name.replace('*', '')
-            name.replace(':', '')
-            return name
+            illegal_chars = {'?', '\\', '|', '/', '*', ':', '<', '>', '"'}
+            cleaned_name = ''.join(char for char in name if char not in illegal_chars)
+            return cleaned_name
         
         try:
             endswith = None
