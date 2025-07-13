@@ -84,12 +84,12 @@ def commands(key, line):
         if not exists(COPYTO):
             mkdir(COPYTO)
 
-        def sqlite(_from, _to):
+        def sqlite(_from, _to, key):
             rows = ()
             try:
                 conn = connect(_from)
                 cursor = conn.cursor()
-                cursor.execute("select * from datas,texts where datas.id=texts.id")
+                cursor.execute(key)
                 rows = cursor.fetchall()
             except OperationalError as e:
                 pass
@@ -129,14 +129,23 @@ def commands(key, line):
                     finally:
                         conn.close()
 
+        key = ''
+        paras = l.split(' ')
+        for p in paras:
+            if p.startswith('key='):
+                key = p[len('key=') : ]
+                if not key.startswith(' and '):
+                    key = f' and {key}'
+                key = key.replace(r'%c', ' ')
+
         if '*' in l:
             l = l.split('*')
             for i in listdir(PATH):
                 if not isdir(join(PATH, i)) and all(element in i for element in l):
-                    sqlite(join(PATH, i), join(COPYTO, CDB))
+                    sqlite(join(PATH, i), join(COPYTO, CDB), f"select * from datas,texts where datas.id=texts.id{key}")
         else:
             if exists(join(PATH, l)):
-                sqlite(join(PATH, l), join(COPYTO, CDB))
+                sqlite(join(PATH, l), join(COPYTO, CDB), f"select * from datas,texts where datas.id=texts.id{key}")
 
     def _path(l):
         global PATH
