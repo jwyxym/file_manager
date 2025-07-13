@@ -166,30 +166,29 @@ def commands(key, line):
         if len(keys) == 0 or len(example) == 0:
             _copy(l)
         elif exists(join(PATH, l)):
-            # try:
-            data = None
-            e = None
-            with open(join(PATH, l), 'r', encoding = 'utf-8') as f:
-                data = load(f)
-            with open(example, 'r', encoding = 'utf-8') as f:
-                e = load(f)
-            if data and e:
-                for key in keys:
-                    k, v, base = '{', data, e
-                    g = key.split('.')
-                    for i in range(len(g)):
-                        k += f'"{g[i]}" : '
-                        if i < len(g) - 1:
-                            k += '{ '
-                        v = v.get(g[i])
-                        base = base.get(g[i])
-                        if i == len(g) - 1 and len(k) > 0 and not v is None:
-                            merge(e, loads(f'{k}{"'"if base and "'" in base else ''}{v}{"'"if base and "'" in base else ''} {'} ' * k.count('{')}'))
-            with open(join(COPYTO, l), 'w', encoding = 'utf-8') as f:
-                f.write(dumps(e, ensure_ascii = False, indent = 4))
-            # except Exception as e:
-            #     print(e)
-            #     pass
+            try:
+                data = None
+                e = None
+                with open(join(PATH, l), 'r', encoding = 'utf-8') as f:
+                    data = load(f)
+                with open(example, 'r', encoding = 'utf-8') as f:
+                    e = load(f)
+                if data and e:
+                    for key in keys:
+                        k, v, base = '{', data, e
+                        g = key.split('.')
+                        for i in range(len(g)):
+                            k += f'"{g[i]}" : '
+                            if i < len(g) - 1:
+                                k += '{ '
+                            v = v.get(g[i])
+                            base = base.get(g[i])
+                            if i == len(g) - 1 and len(k) > 0 and not v is None:
+                                merge(e, eval(f'{k}{"'"if type(base) is str and "'" in base else ''}{v}{"'"if type(base) is str and "'" in base else ''} {'} ' * k.count('{')}'))
+                with open(join(COPYTO, l), 'w', encoding = 'utf-8') as f:
+                    f.write(dumps(e, ensure_ascii = False, indent = 4))
+            except:
+                pass
     def _path(l):
         global PATH
         PATH = join(PATH, l)
