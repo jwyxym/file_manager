@@ -10,7 +10,8 @@ from sys import argv
 from pathlib import Path
 from sqlite3 import connect, OperationalError
 from zipfile import ZipFile, ZIP_DEFLATED
-
+from json import load, loads, dumps
+from mergedeep import merge
 
 # 批注符号
 # -path 进入目录
@@ -20,7 +21,8 @@ from zipfile import ZipFile, ZIP_DEFLATED
 # -deltree 删除目录下的指定目录
 # -copydeltree 删除-copyto目录下的指定目录
 # -copyto 复制的目标目录
-# -sqlite 复制目录下的cdb（整合到-copyto目录下的cards.cdb中）
+# -sqlite 复制目录下的cdb（整合到-copyto目录下的cards.cdb中, 用key指定sql语句）
+# -json 复制目录下的json（整合到-copyto目录下的同名json中，用key指定允许更改的内容， 用example指定原文本）
 # -cmd 使用命令（在path下）
 # -ccmd 使用命令（静默模式）
 # -path.. 上一层目录（进入上一层目录）
@@ -146,7 +148,48 @@ def commands(key, line):
         else:
             if exists(join(PATH, l)):
                 sqlite(join(PATH, l), join(COPYTO, CDB), f"select * from datas,texts where datas.id=texts.id{key}")
-
+    def _json(l):
+        keys = []
+        example = ''
+        paras = l.split(' ')
+        for p in paras:
+            if p.startswith('key='):
+                keys = p[len('key=') : ].split(r'%%')
+                l = l.replace(p, '')
+            if p.startswith('example='):
+                example = join(COPYTO, p[len('example=') : ])
+                l = l.replace(p, '')
+        if COPYTO == '':
+            return
+        if not exists(COPYTO):
+            mkdir(COPYTO)
+        if len(keys) == 0 or len(example) == 0:
+            _copy(l)
+        elif exists(join(PATH, l)):
+            # try:
+            data = None
+            e = None
+            with open(join(PATH, l), 'r', encoding = 'utf-8') as f:
+                data = load(f)
+            with open(example, 'r', encoding = 'utf-8') as f:
+                e = load(f)
+            if data and e:
+                for key in keys:
+                    k, v, base = '{', data, e
+                    g = key.split('.')
+                    for i in range(len(g)):
+                        k += f'"{g[i]}" : '
+                        if i < len(g) - 1:
+                            k += '{ '
+                        v = v.get(g[i])
+                        base = base.get(g[i])
+                        if i == len(g) - 1 and len(k) > 0 and not v is None:
+                            merge(e, loads(f'{k}{"'"if base and "'" in base else ''}{v}{"'"if base and "'" in base else ''} {'} ' * k.count('{')}'))
+            with open(join(COPYTO, l), 'w', encoding = 'utf-8') as f:
+                f.write(dumps(e, ensure_ascii = False, indent = 4))
+            # except Exception as e:
+            #     print(e)
+            #     pass
     def _path(l):
         global PATH
         PATH = join(PATH, l)
@@ -269,6 +312,7 @@ def commands(key, line):
         '-copyto' : _copyto,
         '-copy' : _copy,
         '-sqlite' : _sqlite,
+        '-json' : _json,
         '-path' : _path,
         '-ccmd' : _ccmd,
         '-cmd' : _cmd,
