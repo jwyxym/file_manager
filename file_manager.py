@@ -136,18 +136,19 @@ def commands(key, line):
         for p in paras:
             if p.startswith('key='):
                 key = p[len('key=') : ]
-                if not key.startswith(' and '):
-                    key = f' and {key}'
+                l = l.replace(p, '').rstrip()
                 key = key.replace(r'%c', ' ')
+                if not key.startswith('and '):
+                    key = f'and {key}'
 
         if '*' in l:
             l = l.split('*')
             for i in listdir(PATH):
                 if not isdir(join(PATH, i)) and all(element in i for element in l):
-                    sqlite(join(PATH, i), join(COPYTO, CDB), f"select * from datas,texts where datas.id=texts.id{key}")
+                    sqlite(join(PATH, i), join(COPYTO, CDB), f"select * from datas,texts where datas.id=texts.id {key}")
         else:
             if exists(join(PATH, l)):
-                sqlite(join(PATH, l), join(COPYTO, CDB), f"select * from datas,texts where datas.id=texts.id{key}")
+                sqlite(join(PATH, l), join(COPYTO, CDB), f"select * from datas,texts where datas.id=texts.id {key}")
     def _json(l):
         keys = []
         example = ''
