@@ -10,8 +10,9 @@ from sys import argv
 from pathlib import Path
 from sqlite3 import connect, OperationalError
 from zipfile import ZipFile, ZIP_DEFLATED
-from json import load, loads, dumps
+from json import load, dumps
 from mergedeep import merge
+from urllib.parse import unquote
 
 # 批注符号
 # -path 进入目录
@@ -172,7 +173,7 @@ def commands(key, line):
                 e = None
                 with open(join(PATH, l), 'r', encoding = 'utf-8') as f:
                     data = load(f)
-                with open(example, 'r', encoding = 'utf-8') as f:
+                with open(join(COPYTO, example), 'r', encoding = 'utf-8') as f:
                     e = load(f)
                 if data and e:
                     for key in keys:
@@ -248,8 +249,8 @@ def commands(key, line):
 
         def to_name(name):
             illegal_chars = {'?', '\\', '|', '/', '*', ':', '<', '>', '"'}
-            cleaned_name = ''.join(char for char in name if char not in illegal_chars)
-            return cleaned_name
+            cleaned_name = ''.join(char for char in unquote(name) if char not in illegal_chars)
+            return cleaned_name[ : 250]
         
         try:
             endswith = None
@@ -262,7 +263,7 @@ def commands(key, line):
                 elif p.startswith('incluchk='):
                     incluchk.extend(p[len('incluchk=') : ].split('|'))
                 elif p.startswith('endswith='):
-                    endswith = p[len('incluchk=') : ]
+                    endswith = p[len('endswith=') : ]
             if (any(paras[0].startswith(x) for x in ['C:', 'D:', 'E:', './', '/']) and paras[0].endswith('.txt')) or exists(join(PATH, paras[0])):
                 with open (join(PATH, paras[0]), 'r', encoding = 'utf-8') as f:
                     for i in f.readlines():
