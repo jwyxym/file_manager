@@ -1,4 +1,4 @@
-from os.path import join, exists, isdir, isfile, dirname, relpath, basename
+from os.path import join, exists, isdir, dirname, relpath, basename
 from os import listdir, mkdir, remove, walk
 from shutil import copy, rmtree
 from tqdm import tqdm
@@ -173,7 +173,7 @@ def commands(key, line):
                 e = None
                 with open(join(PATH, l), 'r', encoding = 'utf-8') as f:
                     data = load(f)
-                with open(join(COPYTO, example), 'r', encoding = 'utf-8') as f:
+                with open(example, 'r', encoding = 'utf-8') as f:
                     e = load(f)
                 if data and e:
                     for key in keys:
@@ -186,7 +186,7 @@ def commands(key, line):
                             v = v.get(g[i])
                             base = base.get(g[i])
                             if i == len(g) - 1 and len(k) > 0 and not v is None:
-                                merge(e, eval(f'{k}{"'"if type(base) is str and "'" in base else ''}{v}{"'"if type(base) is str and "'" in base else ''} {'} ' * k.count('{')}'))
+                                merge(e, eval(f'{k}{'"'if type(base) is str else ''}{v}{'"'if type(base) is str else ''} {'} ' * k.count('{')}'))
                 with open(join(COPYTO, l), 'w', encoding = 'utf-8') as f:
                     f.write(dumps(e, ensure_ascii = False, indent = 4))
             except:
