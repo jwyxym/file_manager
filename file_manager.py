@@ -6,7 +6,7 @@ from subprocess import run, DEVNULL
 from time import sleep
 from aiohttp import ClientSession, TCPConnector
 from asyncio import run as async_run
-from sys import argv
+from sys import argv, exit
 from pathlib import Path
 from sqlite3 import connect, OperationalError
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -334,18 +334,22 @@ def commands(key, line):
 
 
 if __name__ == '__main__' and len(argv) >= 2:
-    f = None
-    with open (argv[1], 'r', encoding = 'utf-8') as file:
-        f = file.readlines()
-
-    with tqdm(total = len(f) - 1, unit_scale = True, desc = '启动中', position = 0, leave = True) as pbar:
-        for i in range(len(f)):                
-            line = f[i]
-            pbar.update(1)
-            line = line.rstrip('\n')
-            line = line.split(maxsplit = 1)
-            sleep(0.1)
-            if len(line) == 0 or line[0].startswith('#'):
-                continue
-            commands(line[0], line[1] if len(line) > 1 else '')
-    commands(FINAL[0], FINAL[1] if len(FINAL) > 1 else '')
+    try:
+        f = None
+        with open (argv[1], 'r', encoding = 'utf-8') as file:
+            f = file.readlines()
+        with tqdm(total = len(f) - 1, unit_scale = True, desc = '启动中', position = 0, leave = True) as pbar:
+            for i in range(len(f)):                
+                line = f[i]
+                pbar.update(1)
+                line = line.rstrip('\n')
+                line = line.split(maxsplit = 1)
+                sleep(0.1)
+                if len(line) == 0 or line[0].startswith('#'):
+                    continue
+                commands(line[0], line[1] if len(line) > 1 else '')
+        commands(FINAL[0], FINAL[1] if len(FINAL) > 1 else '')
+    except KeyboardInterrupt:
+        exit(0)
+    except Exception as e:
+        print(e)
