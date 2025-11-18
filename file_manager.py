@@ -110,10 +110,10 @@ def commands(key, line):
                     finally:
                         conn.close()
 
-                for row in rows:
-                    try:
-                        conn = connect(_to)
-                        cursor = conn.cursor()
+                try:
+                    conn = connect(_to)
+                    cursor = conn.cursor()
+                    for row in rows:
                         cursor.execute(f"INSERT OR REPLACE INTO datas VALUES({row[0]}, {row[1]}, {row[2]}, {row[3]}, {row[4]}, {row[5]}, {row[6]}, {row[7]}, {row[8]}, {row[9]}, {row[10]});")
                         query = """
                             INSERT OR REPLACE INTO texts VALUES(
@@ -128,9 +128,11 @@ def commands(key, line):
                             row[26], row[27], row[28], row[29]
                         )
                         cursor.execute(query, values)
-                        conn.commit()
-                    finally:
-                        conn.close()
+                except Exception:
+                    conn.rollback()
+                finally:
+                    conn.commit()
+                    conn.close()
 
         key = ''
         paras = l.split(' ')
